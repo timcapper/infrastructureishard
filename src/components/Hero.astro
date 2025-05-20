@@ -2,29 +2,38 @@
 import { type CollectionEntry, getCollection } from 'astro:content';
 import { marked } from 'marked';
 import Button from './Button.astro';
+import FormattedDate from './FormattedDate.astro';
 import siteConfig from '../data/site-config';
+import { sortItemsByDateDesc } from '../utils/data-utils';
 
-const hero = siteConfig.hero;
+const posts = (await getCollection('blog')).sort(sortItemsByDateDesc);
+const latestPost = posts[0];
 ---
 
 {
-    (hero?.title || hero?.image?.src || hero?.text || (hero?.actions && hero.actions.length > 0)) && (
+    latestPost && (
         <section class="w-full flex flex-col gap-8 mb-16 sm:mb-24">
-            {hero.title && <h1 class="text-3xl leading-tight font-serif font-medium sm:text-5xl sm:leading-tight">{hero.title}</h1>}
-            {hero.image?.src && (
+            <h1 class="text-3xl leading-tight font-serif font-medium sm:text-5xl sm:leading-tight">{latestPost.data.title}</h1>
+            <div class="text-sm">
+                <FormattedDate date={latestPost.data.publishDate} />
+                {latestPost.data.updatedDate && (
+                    <>
+                        {' '}
+                        <span>
+                            (Updated on <FormattedDate date={latestPost.data.updatedDate} />)
+                        </span>
+                    </>
+                )}
+            </div>
+            {latestPost.data.seo?.image?.src && (
                 <figure>
-                    <img class="w-full" src={hero.image.src} loading="lazy" decoding="async" alt={hero.image.alt || ''} />
-                    {hero.image.caption && <figcaption class="mt-1.5 text-xs sm:text-sm">{hero.image.caption}</figcaption>}
+                    <img class="w-full" src={latestPost.data.seo.image.src} loading="lazy" decoding="async" alt={latestPost.data.seo.image.alt || ''} />
                 </figure>
             )}
-            {hero.text && <div class="max-w-none prose prose-dante sm:prose-lg" set:html={marked.parse(hero.text)} />}
-            {hero.actions && hero.actions.length > 0 && (
-                <div class="flex flex-wrap gap-4">
-                    {hero.actions.map((action) => (
-                        <Button href={action.href}>{action.text}</Button>
-                    ))}
-                </div>
-            )}
+            {latestPost.data.excerpt && <div class="max-w-none prose prose-dante sm:prose-lg">{latestPost.data.excerpt}</div>}
+            <div class="flex flex-wrap gap-4">
+                <Button href={`/blog/${latestPost.id}/`}>Read post</Button>
+            </div>
         </section>
     )
 }
